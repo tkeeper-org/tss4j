@@ -129,12 +129,12 @@ allprojects {
                     pom {
                         name = p.ext.projectName
                         description = p.ext.projectDescription
-                        url = 'https://github.com/exploit-org/tss4j'
+                        url = 'https://github.com/tkeeper-org/tss4j'
 
                         licenses {
                             license {
                                 name = 'Apache License 2.0'
-                                url = 'https://github.com/exploit-org/tss4j/blob/main/LICENSE'
+                                url = 'https://github.com/tkeeper-org/tss4j/blob/main/LICENSE'
                             }
                         }
 
