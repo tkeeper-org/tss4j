@@ -113,13 +113,13 @@ public class Ed25519PointTest {
     }
 
     @Test
-    public void testFromBytesInvalidLength() {
+    public void testParseInvalidLength() {
         var buf = new byte[Sodium.crypto_core_ed25519_BYTES - 1];
-        assertThrows(IllegalArgumentException.class, () -> Ed25519PointOps.fromBytes(buf), "Invalid length should throw");
+        assertThrows(IllegalArgumentException.class, () -> Ed25519PointOps.parse(buf), "Invalid length should throw");
     }
 
     @Test
-    public void testFromBytesInvalidPoint() {
+    public void testInvalidPoint() {
         var buf = new byte[Sodium.crypto_core_ed25519_BYTES];
         assertFalse(Ed25519PointOps.fromBytes(buf).isValid(), "Invalid point should return false");
     }
@@ -135,13 +135,13 @@ public class Ed25519PointTest {
     public void testMulClampedProducesValidPoint() {
         var p = Ed25519PointOps.random();
         var enc = p.mulClamped(BigInt.valueOf(5)).encode(false);
-        assertTrue(() -> Ed25519PointOps.fromBytes(enc).isValid(), "Clamped multiplication should yield valid point");
+        assertTrue(() -> Ed25519PointOps.parse(enc).isValid(), "Clamped multiplication should yield valid point");
     }
 
     @Test
     public void testBaseMulClampedProducesValidPoint() {
         var enc = Ed25519PointOps.baseMulClamped(BigInt.valueOf(5)).encode(false);
-        assertDoesNotThrow(() -> Ed25519PointOps.fromBytes(enc), "Clamped base multiplication should yield valid point");
+        assertDoesNotThrow(() -> Ed25519PointOps.parse(enc), "Clamped base multiplication should yield valid point");
     }
 
     @Test

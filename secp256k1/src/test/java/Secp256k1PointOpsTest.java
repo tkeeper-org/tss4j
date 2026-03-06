@@ -36,10 +36,10 @@ public class Secp256k1PointOpsTest {
         assertArrayEquals(G_COMPRESSED, g.encode(true));
     }
 
-    @Test @DisplayName("encode(true) → fromBytes → equals(original)")
+    @Test @DisplayName("encode(true) → parse → equals(original)")
     void testEncodeRoundtrip() {
         var p = Secp256k1PointOps.baseMul(K1);
-        var copy = Secp256k1PointOps.fromBytes(p.encode(true));
+        var copy = Secp256k1PointOps.parse(p.encode(true));
         assertEquals(p, copy);
         assertEquals(33, p.encode(true).length);
         assertEquals(65, p.encode(false).length);
@@ -149,11 +149,11 @@ public class Secp256k1PointOpsTest {
         assertNotEquals(P1, Q);
     }
 
-    @Test @DisplayName("fromBytes with wrong length throws on encode(false)")
+    @Test @DisplayName("parse with wrong length throws on encode(false)")
     void testInvalidLengthParsing() {
         var invalid = new byte[10];
-        assertThrows(IllegalStateException.class, () -> {
-            Secp256k1PointOps.fromBytes(invalid).encode(false);
+        assertThrows(IllegalArgumentException.class, () -> {
+            Secp256k1PointOps.parse(invalid).encode(false);
         });
     }
 
