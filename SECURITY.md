@@ -4,7 +4,7 @@ native dependencies (GG20/FROST glue, GMP-sec wrappers, etc.) **please do not
 open a public issue or pull-request.**
 
 Instead, email us at:
-`security@exploit.org`
+`security@tkeeper.org`
 
 Please include:
 

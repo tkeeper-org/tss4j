@@ -85,7 +85,7 @@ allprojects {
     }
 
     group = 'org.exploit'
-    version = ext.getProperties().get('version') == null ? '0.0.8' : ext.version
+    version = ext.getProperties().get('version') == null ? '0.0.9' : ext.version
 
     mavenCentral {
         repoDir = layout.buildDirectory.dir('repos/bundles')
@@ -141,15 +141,15 @@ allprojects {
                         developers {
                             developer {
                                 id = '0'
-                                name = 'Martin Belov'
-                                email = 'martin@exploit.org'
+                                name = 'xlloit'
+                                email = 'r@tkeeper.org'
                             }
                         }
 
                         scm {
-                            connection = 'scm:git:https://github.com/exploit-org/tss4j.git'
-                            developerConnection = 'scm:git:ssh://github.com/exploit-org/tss4j.git'
-                            url = 'https://github.com/exploit-org/tss4j'
+                            connection = 'scm:git:https://github.com/tkeeper-org/tss4j.git'
+                            developerConnection = 'scm:git:ssh://github.com/tkeeper-org/tss4j.git'
+                            url = 'https://github.com/tkeeper-org/tss4j'
                         }
                     }
                 }
