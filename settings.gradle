@@ -11,3 +11,5 @@ include 'ecies'
 
 include 'frost:frost-secp256k1'
 include 'frost:frost-ed25519'
+include 'secp256r1'
+include 'frost:frost-secp256r1'

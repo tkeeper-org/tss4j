@@ -85,7 +85,7 @@ allprojects {
     }
 
     group = 'org.exploit'
-    version = ext.getProperties().get('version') == null ? '0.0.10' : ext.version
+    version = ext.getProperties().get('version') == null ? '0.0.11' : ext.version
 
     mavenCentral {
         repoDir = layout.buildDirectory.dir('repos/bundles')

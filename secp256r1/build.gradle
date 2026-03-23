@@ -6,8 +6,8 @@ group = 'org.exploit'
 version = '0.0.11'
 
 ext {
-    projectName = "FROST Ed25519 scheme"
-    projectDescription = "Adds support of Ed25519 curve to FROST"
+    projectName = 'Secp256r1 Point OPS'
+    projectDescription = "Secp256r1 point operations for TSS4J"
 }
 
 repositories {
@@ -19,15 +19,12 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-    testImplementation project(':ed25519')
     testImplementation project(':')
-    testImplementation project(':frost')
     testImplementation project(':native-build')
 
-    compileOnly(project(':ed25519'))
-    compileOnly(project(':frost'))
-    compileOnly(project(':bigint'))
     compileOnly(project(':'))
+    compileOnly 'org.projectlombok:lombok:1.18.38'
+    annotationProcessor 'org.projectlombok:lombok:1.18.38'
 }
 
 test {

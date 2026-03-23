@@ -17,6 +17,7 @@ dependencies {
     testImplementation project(':')
     testImplementation project(':native-build')
     testImplementation project(':secp256k1')
+    testImplementation project(':secp256r1')
 
     compileOnly 'org.projectlombok:lombok:1.18.38'
     annotationProcessor 'org.projectlombok:lombok:1.18.38'

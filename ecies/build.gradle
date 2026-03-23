@@ -19,7 +19,6 @@ dependencies {
     testImplementation project(':')
 
     compileOnly project(':')
-    implementation 'org.bouncycastle:bcprov-jdk18on:1.81'
 }
 
 test {
