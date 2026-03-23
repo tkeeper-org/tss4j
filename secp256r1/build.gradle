@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'org.exploit'
-version = '0.0.11'
+version = '0.0.12'
 
 ext {
     projectName = 'Secp256r1 Point OPS'
