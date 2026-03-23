@@ -1,117 +1,83 @@
-# tss4j
-**Threshold Signature Schemes for Java**
+![](assets/tss4j.png)
+# MPC Threshold Schemes in Java
 
-A focused, production-oriented library that implements multi-party ECDSA (GG20), Schnorr (FROST), and supporting ZK building blocks. The goal is straightforward: make threshold signing safe to deploy without forcing application teams to become cryptographers.
+Java library implementing multi-party ECDSA (GG20), Schnorr (FROST), threshold ECIES, and the ZK building blocks they depend on. Native performance via JNA bindings to libgmp and libsodium.
 
----
+This is the backbone library of [TKeeper (Threshold Key Management System)](https://github.com/tkeeper-org/tkeeper)
 
 ## Modules
 
-| Module              | Purpose                                                      |
-|---------------------|--------------------------------------------------------------|
-| **frost**           | FROST (Schnorr-based) *t-of-n* signatures                    |
-| **frost-secp256k1** | Default, BIP340 & Taproot FROST schemes for Secp256k1 curve  |
-| **frost-ed25519**   | Ed25519 curve support for FROST protocol                     |
-| **gg20**            | GG20 (ECDSA-based) *t-of-n* signatures with Paillier/MtA     |
-| **ecies**           | Threshold Elliptic Curve Integrated Encryption Scheme        |
-| **ed25519**         | Ed25519 Point Ops                                            |
-| **secp256k1**       | secp256k1 curve operations (used in GG20 and optional FROST) |
-| **bigint**          | JNA bindings to **libgmp** (constant-time big-integer ops)   |
-| **sodium**          | JNA bindings to **libsodium** (point ops and hashing)        |
+| Module            | Purpose                                                        |
+|-------------------|----------------------------------------------------------------|
+| `frost`           | FROST (RFC 9591) t-of-n Schnorr threshold signatures           |
+| `frost-secp256k1` | secp256k1 FROST schemes: default, BIP-340, Taproot (BIP-341)   |
+| `frost-ed25519`   | Ed25519 FROST scheme                                           |
+| `gg20`            | GG20 t-of-n threshold ECDSA with Paillier/MtA and ZK hardening |
+| `ecies`           | Threshold ElGamal KEM with verifiable partial decryption       |
+| `ed25519`         | JNA wrappers over libsodium: Ed25519 point ops and signing     |
+| `secp256k1`       | JNA wrappers over libsecp256k1: point ops, ECDSA, Schnorr      |
+| `secp256r1`       | Pure Java P-256 curve implementation based on Bouncy Castle    |
+| `bigint`          | JNA bindings to libgmp: arbitrary-precision integers, CT ops   |
+| `sodium`          | Low-level libsodium JNA bindings (used by ed25519 module)      |
 
----
+## Protocols
 
-## What you get
+### FROST: Threshold Schnorr (RFC 9591)
 
-- **GG20 ECDSA** with hardened MtA: Paillier range proofs, respondent proofs,  and strict modulus validation.
-- **FROST Schnorr** with proof-of-possession to prevent rogue-key aggregation.
-- **ECIES** encryption scheme with threshold key generation and decryption.
-- **Constant-time primitives** for secrets: modular exponentiation/inversion, scalar ops, and curve math.
+Two-round Schnorr threshold signing with Proof-of-Possession commitments. Each participant proves knowledge of their key share before any signing begins, preventing rogue-key attacks in DKG-based setups.
 
----
-## Thread Model (August 2025)
+Supported ciphersuites:
 
-### Scope
-- GG20 Paillier MtA: proofs, validators, MtAProtocol, ZKSetup
-- FROST: preprocessor, partial signer, aggregator, transcript hashing
-- Encoding/RNG: TLV (Bytes.encode), ZKRandom (Secure Random Instance Strong)
+| Scheme                 | Curve     | Notes                                  |
+|------------------------|-----------|----------------------------------------|
+| `FrostEd25519Scheme`   | Ed25519   | RFC 8032-compatible output             |
+| `FrostSecp256k1Scheme` | secp256k1 | SEC1-compressed R                      |
+| `FrostBIP340Scheme`    | secp256k1 | BIP-340 Schnorr, x-only                |
+| `FrostTaprootScheme`   | secp256k1 | BIP-341 Taproot key-path with TapTweak |
+| `FrostSecp256r1Scheme` | P-256     | SEC1-compressed R                      |
 
-### Assets
-- Paillier private key (λ, μ, p, q), Paillier randomness r
-- Secret shares sk_i, one-time nonces d_i, e_i, r (PoP)
-- Session transcripts (commitments, contexts, AAD)
-- Group public keys and Paillier N
+### GG20: Threshold ECDSA
 
-### Invariants (must hold)
-- Paillier N ≥ 3072 bits and N ≥ q^8
-- ZKSetup: ĤN is Blum (p≡q≡3 mod 4); h1, h2 ∈ QR(ĤN); gcd(h_i, ĤN)=1
-- FROST: identical additionalContext (AAD) for all parties per operation; identical sorted commitment list
-- All hashed data is TLV-encoded; no ad-hoc concatenation
-- One-time nonces (d, e, r, Paillier r) are never reused and are destroyed after use
+One-round online threshold ECDSA with identifiable abort. Hardened against CVE-2023-33241 (BitForge), CVE-2025-66016, and Alpha-Rays via the full CGGMP21/24 ZK proof suite:
 
-### Attack surfaces and mitigations (by class)
+- **Π_{mod}**: Paillier-Blum modulus proof (Jacobi symbol check included)
+- **Π_{fac}**: No small factors proof (primes > 2²⁵⁶)
+- **Π_{range}**: Range proof for MtA plaintexts (bound q³)
+- **Π_{resp}**: Respondent proof with EC-point binding (MtAwc)
+- **Π_{enc}**: Paillier encryption knowledge proof
 
-#### Malformed/weak Paillier modulus (key extraction)
-  - BiPrime proof: org.exploit.tss.proof.paillier.BiPrimeProofGenerator / BiPrimeProofValidator
-  - NoSmallFactor proof: NoSmallFactorProofGenerator / NoSmallFactorProofValidator
+Supported curves: secp256k1, secp256r1 (P-256).
 
-#### Range abuse in MtA (out-of-range plaintexts)
-  - PaillierRangeProof: PaillierRangeProofGenerator / PaillierRangeProofValidator
-    * Witness: PaillierRangeEncryptionWitness(m,r,c,pk,zk,q)
-    * Context: PaillierRangeProofContext(c,q,zk,ctx)
-    * Enforces m ∈ [0,q), binds to ciphertext c; s1 ∈ Z_{q^3}
+### Threshold ECIES: Verifiable Threshold Decryption
 
-#### Malformed MtA response (arbitrary c_j)
-  - PaillierRespondentProof: PaillierRespondentProofGenerator / PaillierRespondentProofValidator
-    * Context: PaillierRespondentProofContext(c_i,c_j,q,zk,ctx)
-    * Binds c_j to (c_i, b, y, r_j); checks s1 ∈ Z_{q^3}, t1 ∈ Z_{q^7}; rejects non-units
-  - MtAProtocol: validatePaillierN enforces N ≥ q^8; computeCjWithY constructs c_j with Enc(y; r_j) and requires a valid proof
+ElGamal KEM with AEAD symmetric layer. Encryption is non-interactive; decryption requires ≥ t participants, each producing a partial decrypt with a DLEQ proof. Coordinator verifies all proofs before combining via Lagrange interpolation. Faulty participants identified via `IdentifiableAbortException`.
 
-#### Transcript mixups / cross-session reuse
-  - TLV everywhere: org.exploit.tss.bytes.Bytes.encode
-  - Context/AAD binding:
-    * GG20 proofs include session context bytes
-    * FROST H1/H2 include AAD; PoP includes AAD
+Supported ciphers: AES-256-GCM, ChaCha20-Poly1305. KDF: HKDF-SHA-384 with domain separation.
 
-#### Rogue-key and aggregator vectors (FROST)
-  - PoP: FrostPreProcessor.generateCommitment creates sigma = r + c·sk_i
-    * c = H(POP_DOMAIN || AAD || Y_i || R)
-  - PoP verify: SignaturePartAggregator.verifyPoP uses same challenge inputs
-  - Binding factors: FrostHash.H1(idx,msg,AAD,B,q), FrostHash.H2(R,Y,msg,AAD,q)
-    * R = Σ(D_j + ρ_j E_j); per-share check g·z_i = D_i + ρ_i E_i + λ_i·c·Y_i
-  - Aggregator enforces identical AAD and identical participant list
+## Setup
 
-#### Replay / cross-protocol reuse
-  - Domain tags in all FROST hashes (H1/H2/PoP); TLV encoding of inputs
-  - GG20 proofs bind to exact ciphertexts and to context
+### Requirements
 
-#### RNG misuse / nonce reuse
-  - ZKRandom backed by CSPRNG; fresh (d,e,r, r_j) per session
-  - Operational requirement: zero/destroy one-time values after use
+- JDK 17+
+- Native libraries bundled as platform classifiers:
 
-#### Performance hardening
-- Paillier proofs (generation/verification) are parallelized across independent rounds; no shared mutable state
-
-#### Residual risks
-- Threshold assumption: compromise/collusion of ≥ t parties breaks secrecy/unforgeability
-- Side channels beyond timing (EM/power/cache) are out of scope; deploy on hardened hosts
-
-## Requirements
-
-- JDK 17+ (LTS recommended)
-- Native libraries are linked:
 ```groovy
 implementation("org.exploit:tss4j-natives:1.0.0:linux-amd64@jar")
 implementation("org.exploit:tss4j-natives:1.0.0:macos-aarch64@jar")
 implementation("org.exploit:tss4j-natives:1.0.0:windows-amd64@jar")
 ```
 
-Make sure you load them via:
+Load them before any cryptographic operation:
+
 ```java
 TSS.loadLibraries();
 ```
 
-- A secure source of randomness for key generation; ZK transcripts use the built-in DRBG
+RNG: ZK transcripts use the built-in `ZKRandom` (backed by `SecureRandom.getInstanceStrong()`).
+
+## Security
+
+See [Threat Model](THREAT_MODEL.md) for the full adversary model, threat catalog, ZK proof inventory, and addressed CVEs.
 
 ## License
 
